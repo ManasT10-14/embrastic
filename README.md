@@ -15,7 +15,13 @@ This is a **single shared-business app**: every authenticated user reads and wri
 ## Local setup
 
 1. **Create a Supabase project** at [supabase.com](https://supabase.com).
-2. **Run the schema migration.** Open the Supabase SQL Editor and run `supabase/migrations/001_initial_schema.sql` (or `supabase db push` if you have the CLI linked to your project).
+2. **Run the schema migrations, in order.** Open the Supabase SQL Editor and run:
+   - `supabase/migrations/001_initial_schema.sql` — tables, foreign keys, RLS policies.
+   - `supabase/migrations/002_business_rules.sql` — the agreed discount/GST on orders, the CHECK constraints that keep quantities and percentages sane, and the atomic `record_stock_movement()` function.
+
+   Both are required. `002` is idempotent, so re-running it is safe. If it hasn't been run, the app shows a banner on every page telling you so, rather than failing halfway through saving an order.
+
+   (Or `supabase db push` if you have the CLI linked to your project.)
 3. **Copy environment variables:**
    ```
    cp .env.example .env.local
@@ -54,3 +60,7 @@ lib/
 supabase/
   migrations/      SQL schema, run manually against your Supabase project
 ```
+
+## Upgrading an existing deployment
+
+When you pull changes that add a migration, run the new `supabase/migrations/*.sql` file in the Supabase SQL Editor **before or right after** deploying. The app checks on load whether the database has what the code expects (`checkSchemaReady` in `lib/db.ts`) and shows an actionable banner if not.

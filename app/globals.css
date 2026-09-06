@@ -66,3 +66,42 @@
     @apply bg-background text-foreground;
   }
 }
+
+/*
+ * Printing an invoice.
+ *
+ * The invoice is rendered inside a modal that sits on top of the whole app,
+ * so a plain window.print() would put the sidebar, the page header and the
+ * invoice list behind it onto paper. Hide everything, then bring just the
+ * invoice document back and lift it to the top-left of the page.
+ */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #invoice-print,
+  #invoice-print * {
+    visibility: visible;
+  }
+
+  #invoice-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+  }
+
+  /* Keep table rows and totals from being split across pages. */
+  #invoice-print tr,
+  #invoice-print table {
+    break-inside: avoid;
+  }
+}

@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Menu, X } from "lucide-react";
+import { checkSchemaReady } from "@/lib/db";
+import { Menu, X, AlertTriangle } from "lucide-react";
 
 const menu: Array<[string, string, string]> = [
   ["Dashboard", "📊", "/protected"],
@@ -30,6 +31,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   const [checked, setChecked] = useState(false);
   const [email, setEmail] = useState("");
   const [initError, setInitError] = useState("");
+  const [schemaMissing, setSchemaMissing] = useState<string[]>([]);
 
   useEffect(() => {
     try {
@@ -41,6 +43,11 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
         }
         setEmail(data.user.email ?? "");
         setChecked(true);
+        // Warn once, up front, if this deployment's database is behind the
+        // code — far clearer than a Postgres error halfway through a workflow.
+        checkSchemaReady()
+          .then((status) => setSchemaMissing(status.missing))
+          .catch(() => setSchemaMissing([]));
       }).catch((err) => {
         setInitError(err instanceof Error ? err.message : "Failed to check your session.");
       });
@@ -153,6 +160,22 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
             </button>
           </div>
         </header>
+
+        {schemaMissing.length > 0 && (
+          <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 sm:px-6">
+            <div className="flex items-start gap-2 text-sm text-amber-900">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="font-semibold">Your database needs a one-time update</p>
+                <p className="mt-0.5">
+                  Missing: {schemaMissing.join(", ")}. Open your Supabase project → <strong>SQL Editor</strong>, paste the
+                  contents of <code className="rounded bg-amber-100 px-1">supabase/migrations/002_business_rules.sql</code> and
+                  run it. Until then, saving orders and stock movements will fail.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="p-4 sm:p-6">{children}</div>
       </main>

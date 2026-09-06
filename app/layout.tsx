@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
-import { ThemeProvider } from "next-themes";
 import { getBaseUrl } from "@/lib/utils";
 import "./globals.css";
 
@@ -21,18 +20,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // EMBRASTIC is a light-only interface: the business pages are built on an
+  // explicit slate/white palette and there is no theme switcher. Following the
+  // OS theme would have rendered the auth cards dark against a light app.
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
-      </body>
+    <html lang="en">
+      <body className={`${geistSans.className} antialiased`}>{children}</body>
     </html>
   );
 }
