@@ -29,17 +29,24 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   const [mobileOpen, setMobileOpen] = useState(false);
   const [checked, setChecked] = useState(false);
   const [email, setEmail] = useState("");
+  const [initError, setInitError] = useState("");
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data, error }) => {
-      if (error || !data.user) {
-        router.replace("/auth/login");
-        return;
-      }
-      setEmail(data.user.email ?? "");
-      setChecked(true);
-    });
+    try {
+      const supabase = createClient();
+      supabase.auth.getUser().then(({ data, error }) => {
+        if (error || !data.user) {
+          router.replace("/auth/login");
+          return;
+        }
+        setEmail(data.user.email ?? "");
+        setChecked(true);
+      }).catch((err) => {
+        setInitError(err instanceof Error ? err.message : "Failed to check your session.");
+      });
+    } catch (err) {
+      setInitError(err instanceof Error ? err.message : "Failed to connect to the backend.");
+    }
   }, [router]);
 
   useEffect(() => {
@@ -50,6 +57,21 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
     const supabase = createClient();
     await supabase.auth.signOut();
     router.replace("/auth/login");
+  }
+
+  if (initError) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-slate-50 px-6 text-center">
+        <p className="text-sm font-semibold text-red-600">Couldn&apos;t connect to the backend</p>
+        <p className="max-w-md text-sm text-slate-500">{initError}</p>
+        <p className="max-w-md text-xs text-slate-400">
+          This usually means the app&apos;s Supabase environment variables are missing or incorrect for this deployment.
+        </p>
+        <button onClick={() => window.location.reload()} className="mt-2 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+          Reload
+        </button>
+      </div>
+    );
   }
 
   if (!checked) {
